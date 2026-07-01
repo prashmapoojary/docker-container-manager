@@ -111,18 +111,18 @@ function App() {
         </div>
 
         {/* Stats Summary */}
-        <div className="flex gap-4 mb-6">
-          <div className="bg-card border border-border rounded-2xl px-6 py-3">
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="bg-card border border-border rounded-2xl px-6 py-4 text-center">
             <span className="text-muted-foreground text-sm">Total</span>
-            <p className="text-2xl font-bold">{containers.length}</p>
+            <p className="text-3xl font-bold">{containers.length}</p>
           </div>
-          <div className="bg-card border border-border rounded-2xl px-6 py-3">
+          <div className="bg-card border border-border rounded-2xl px-6 py-4 text-center">
             <span className="text-muted-foreground text-sm">Running</span>
-            <p className="text-2xl font-bold text-primary">{runningCount}</p>
+            <p className="text-3xl font-bold text-primary">{runningCount}</p>
           </div>
-          <div className="bg-card border border-border rounded-2xl px-6 py-3">
+          <div className="bg-card border border-border rounded-2xl px-6 py-4 text-center">
             <span className="text-muted-foreground text-sm">Stopped</span>
-            <p className="text-2xl font-bold text-destructive">{stoppedCount}</p>
+            <p className="text-3xl font-bold text-destructive">{stoppedCount}</p>
           </div>
         </div>
 
@@ -273,10 +273,6 @@ function App() {
             </div>
           </div>
         </div>
-
-        <p className="text-center text-muted-foreground text-sm mt-6">
-          Backend running on port 5000 • Auto-refresh every 5 seconds
-        </p>
       </div>
 
       {/* Logs Modal */}
