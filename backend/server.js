@@ -1,15 +1,52 @@
 const express = require('express');
 const cors = require('cors');
 const Docker = require('dockerode');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const docker = new Docker();
 
+// Auth config
+const JWT_SECRET = 'my-super-secret-key-change-in-production';
+const ADMIN_USER = 'admin';
+const ADMIN_PASS = 'admin123';
+
 app.use(cors());
 app.use(express.json());
 
+// Login route
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+
+    if (username === ADMIN_USER && password === ADMIN_PASS) {
+        const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '24h' });
+        return res.json({ token, message: 'Login successful' });
+    }
+
+    res.status(401).json({ error: 'Invalid username or password' });
+});
+
+// Auth middleware — protects routes
+const authMiddleware = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+        return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const token = authHeader.split(' ')[1]; // "Bearer TOKEN"
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (err) {
+        res.status(401).json({ error: 'Invalid or expired token' });
+    }
+};
+
 // List all containers
-app.get('/containers', async (req, res) => {
+app.get('/containers', authMiddleware, async (req, res) => {
     try {
         const containers = await docker.listContainers({ all: true });
         res.json(containers);
@@ -19,7 +56,7 @@ app.get('/containers', async (req, res) => {
 });
 
 // Start container
-app.post('/containers/:id/start', async (req, res) => {
+app.post('/containers/:id/start', authMiddleware, async (req, res) => {
     try {
         const container = docker.getContainer(req.params.id);
         await container.start();
@@ -30,7 +67,7 @@ app.post('/containers/:id/start', async (req, res) => {
 });
 
 // Stop container
-app.post('/containers/:id/stop', async (req, res) => {
+app.post('/containers/:id/stop', authMiddleware, async (req, res) => {
     try {
         const container = docker.getContainer(req.params.id);
         await container.stop();
@@ -41,7 +78,7 @@ app.post('/containers/:id/stop', async (req, res) => {
 });
 
 // Restart container
-app.post('/containers/:id/restart', async (req, res) => {
+app.post('/containers/:id/restart', authMiddleware, async (req, res) => {
     try {
         const container = docker.getContainer(req.params.id);
         await container.restart();
@@ -52,7 +89,7 @@ app.post('/containers/:id/restart', async (req, res) => {
 });
 
 // Get container logs
-app.get('/containers/:id/logs', async (req, res) => {
+app.get('/containers/:id/logs', authMiddleware, async (req, res) => {
     try {
         const container = docker.getContainer(req.params.id);
         const logs = await container.logs({
@@ -67,7 +104,7 @@ app.get('/containers/:id/logs', async (req, res) => {
     }
 });
 // Get container CPU & RAM stats
-app.get('/containers/:id/stats', async (req, res) => {
+app.get('/containers/:id/stats', authMiddleware, async (req, res) => {
     try {
         const container = docker.getContainer(req.params.id);
         const stats = await container.stats({ stream: false });
@@ -97,7 +134,7 @@ app.get('/containers/:id/stats', async (req, res) => {
 });
 
 // Delete a container
-app.delete('/containers/:id', async (req, res) => {
+app.delete('/containers/:id', authMiddleware, async (req, res) => {
     try {
         const container = docker.getContainer(req.params.id);
         await container.remove({ force: true });
@@ -108,7 +145,7 @@ app.delete('/containers/:id', async (req, res) => {
 });
 
 // Create and run a new container
-app.post('/containers/create', async (req, res) => {
+app.post('/containers/create', authMiddleware, async (req, res) => {
     try {
         const { image, name, port } = req.body;
 
