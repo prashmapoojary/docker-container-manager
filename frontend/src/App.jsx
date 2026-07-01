@@ -3,10 +3,12 @@ import axios from 'axios';
 import { Play, Square, RotateCw, FileText, Search, RefreshCw, Cpu, MemoryStick } from 'lucide-react';
 
 const API_BASE = 'http://localhost:5000';
+const GRAFANA_BASE = 'http://localhost:3001';
+const DASHBOARD_ID = 'adsrvlz'; // Your dashboard ID
 
 function App() {
   const [containers, setContainers] = useState([]);
-  const [stats, setStats] = useState({}); // { containerId: { cpuPercent, memPercent, memUsageMB } }
+  const [stats, setStats] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [logsModal, setLogsModal] = useState({ show: false, name: '', logs: '' });
@@ -16,8 +18,6 @@ function App() {
     try {
       const res = await axios.get(`${API_BASE}/containers`);
       setContainers(res.data);
-
-      // Fetch stats for each running container
       res.data.forEach((container) => {
         if (container.State === 'running') {
           fetchStats(container.Id);
@@ -41,7 +41,7 @@ function App() {
 
   useEffect(() => {
     fetchContainers();
-    const interval = setInterval(fetchContainers, 5000); // Refresh every 5 seconds
+    const interval = setInterval(fetchContainers, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -88,6 +88,10 @@ function App() {
     c.Names[0].toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Count running and stopped containers
+  const runningCount = containers.filter(c => c.State === 'running').length;
+  const stoppedCount = containers.length - runningCount;
+
   return (
     <div className="min-h-screen bg-background text-foreground p-6">
       <div className="max-w-7xl mx-auto">
@@ -104,6 +108,22 @@ function App() {
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
             Refresh
           </button>
+        </div>
+
+        {/* Stats Summary */}
+        <div className="flex gap-4 mb-6">
+          <div className="bg-card border border-border rounded-2xl px-6 py-3">
+            <span className="text-muted-foreground text-sm">Total</span>
+            <p className="text-2xl font-bold">{containers.length}</p>
+          </div>
+          <div className="bg-card border border-border rounded-2xl px-6 py-3">
+            <span className="text-muted-foreground text-sm">Running</span>
+            <p className="text-2xl font-bold text-primary">{runningCount}</p>
+          </div>
+          <div className="bg-card border border-border rounded-2xl px-6 py-3">
+            <span className="text-muted-foreground text-sm">Stopped</span>
+            <p className="text-2xl font-bold text-destructive">{stoppedCount}</p>
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -149,7 +169,6 @@ function App() {
                       </span>
                     </td>
 
-                    {/* CPU Column */}
                     <td className="p-5">
                       {isRunning && containerStats ? (
                         <div className="flex items-center gap-2">
@@ -161,7 +180,6 @@ function App() {
                       )}
                     </td>
 
-                    {/* RAM Column */}
                     <td className="p-5">
                       {isRunning && containerStats ? (
                         <div className="flex items-center gap-2">
@@ -228,8 +246,36 @@ function App() {
           )}
         </div>
 
+        {/* Grafana Monitoring Graphs */}
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold text-primary mb-4">📊 Live Monitoring (Grafana)</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* CPU Graph */}
+            <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-lg p-2">
+              <iframe
+                src={`${GRAFANA_BASE}/d-solo/${DASHBOARD_ID}/docker-monitoring-dashboard?orgId=1&from=now-15m&to=now&panelId=panel-1&refresh=5s`}
+                width="100%"
+                height="300"
+                frameBorder="0"
+                title="CPU Usage"
+              ></iframe>
+            </div>
+
+            {/* RAM Graph */}
+            <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-lg p-2">
+              <iframe
+                src={`${GRAFANA_BASE}/d-solo/${DASHBOARD_ID}/docker-monitoring-dashboard?orgId=1&from=now-15m&to=now&panelId=panel-3&refresh=5s`}
+                width="100%"
+                height="300"
+                frameBorder="0"
+                title="RAM Usage"
+              ></iframe>
+            </div>
+          </div>
+        </div>
+
         <p className="text-center text-muted-foreground text-sm mt-6">
-          Auto-refresh every 5 seconds
+          Backend running on port 5000 • Auto-refresh every 5 seconds
         </p>
       </div>
 
