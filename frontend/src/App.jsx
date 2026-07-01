@@ -191,24 +191,24 @@ function App() {
         {/* Search Bar + Filter */}
         <div className="flex gap-4 mb-6">
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-3.5 text-muted-foreground" size={20} />
+            <Search className="absolute left-4 top-3 text-muted-foreground" size={18} />
             <input
               type="text"
               placeholder="Search containers..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-card border border-border pl-12 py-3 rounded-2xl focus:outline-none focus:border-primary text-lg text-foreground"
+              className="w-full bg-card border border-border pl-11 pr-4 py-2.5 rounded-xl focus:outline-none focus:border-primary text-sm text-foreground"
             />
           </div>
 
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-card border border-border px-6 py-3 rounded-2xl focus:outline-none focus:border-primary text-lg text-foreground cursor-pointer"
+            className="bg-card border border-border px-4 py-2.5 rounded-xl focus:outline-none focus:border-primary text-sm text-foreground cursor-pointer [&>option]:bg-card [&>option]:text-foreground [&>option]:p-2"
           >
-            <option value="all">All Containers</option>
-            <option value="running">Running</option>
-            <option value="stopped">Stopped</option>
+            <option value="all" className="bg-card text-foreground">All Containers</option>
+            <option value="running" className="bg-card text-foreground">Running</option>
+            <option value="stopped" className="bg-card text-foreground">Stopped</option>
           </select>
         </div>
 
