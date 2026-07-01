@@ -108,7 +108,7 @@ function App() {
       toast.success(`${name} started`);
       fetchContainers();
     } catch (err) {
-      toast.error('Failed to start container');
+      toast.error(err.response?.data?.error || 'Failed to start container');
     }
   };
 
@@ -118,7 +118,7 @@ function App() {
       toast.success(`${name} stopped`);
       fetchContainers();
     } catch (err) {
-      toast.error('Failed to stop container');
+      toast.error(err.response?.data?.error || 'Failed to stop container');
     }
   };
 
@@ -128,7 +128,7 @@ function App() {
       toast.success(`${name} restarted`);
       fetchContainers();
     } catch (err) {
-      toast.error('Failed to restart container');
+      toast.error(err.response?.data?.error || 'Failed to restart container');
     }
   };
 
@@ -137,7 +137,7 @@ function App() {
       const res = await axios.get(`${API_BASE}/containers/${id}/logs`);
       setLogsModal({ show: true, name, logs: res.data });
     } catch (err) {
-      toast.error('Failed to fetch logs');
+      toast.error(err.response?.data?.error || 'Failed to fetch logs');
     }
   };
 
@@ -163,7 +163,7 @@ function App() {
           toast.success(`${name} deleted`);
           fetchContainers();
         } catch (err) {
-          toast.error('Failed to delete container');
+          toast.error(err.response?.data?.error || 'Failed to delete container');
         }
       }
     );

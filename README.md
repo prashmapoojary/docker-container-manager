@@ -136,3 +136,117 @@ GET	/containers/:id/logs	Get container logs
 - 📉 **Advanced monitoring** with Prometheus + Grafana + cAdvisor (embedded live graphs)
 
 ## 🔑 Default Login
+
+
+
+
+
+How to Run Your Project
+The ONLY Command You Need
+Everything runs with one command using Docker Compose.
+
+Step 1: Open PowerShell
+Press Windows key, type PowerShell, open it.
+
+Step 2: Go to Project Folder
+PowerShell
+
+cd C:\Projects\mini-portainer
+Step 3: Start Everything
+PowerShell
+
+docker compose up
+That's it! This starts all 5 containers:
+
+Frontend (your app)
+Backend (API)
+Prometheus
+Grafana
+cAdvisor
+🌐 Where to Open (URLs)
+Once running, open these in your browser:
+
+What	URL	Login
+Your App	http://localhost:3000	admin / admin123
+Grafana	http://localhost:3001	admin / admin
+Prometheus	http://localhost:9090	none
+cAdvisor	http://localhost:8081	none
+Main one you'll use: http://localhost:3000
+
+🛑 How to Stop
+In the PowerShell window where it's running:
+
+Press:
+
+text
+
+Ctrl + C
+Or open a new PowerShell and run:
+
+PowerShell
+
+cd C:\Projects\mini-portainer
+docker compose down
+🔄 Common Commands Cheat Sheet
+Start the app (normal)
+PowerShell
+
+cd C:\Projects\mini-portainer
+docker compose up
+Start in background (doesn't block terminal)
+PowerShell
+
+docker compose up -d
+Stop the app
+PowerShell
+
+docker compose down
+Rebuild after code changes
+PowerShell
+
+docker compose up --build
+See running containers
+PowerShell
+
+docker ps
+View logs of a service
+PowerShell
+
+docker compose logs frontend
+docker compose logs backend
+📝 When Do I Use --build?
+First time / after changing code → use docker compose up --build
+Just starting normally → use docker compose up (faster)
+🎯 Quick Daily Workflow
+To start working:
+
+PowerShell
+
+cd C:\Projects\mini-portainer
+docker compose up -d
+Then open http://localhost:3000
+
+To stop when done:
+
+PowerShell
+
+docker compose down
+⚠️ Important Notes
+Docker Desktop must be running first (check the whale icon in taskbar)
+Login credentials:
+App: admin / admin123
+Grafana: admin / admin
+Your Grafana dashboard persists (saved even after restart)
+🆘 Troubleshooting
+"Cannot connect to Docker daemon"
+→ Open Docker Desktop app, wait for green light, try again.
+
+"Port already in use"
+→ Run docker compose down first, then docker compose up
+
+App shows blank / can't login
+→ Hard refresh browser: Ctrl + Shift + R
+
+Graphs not showing in app
+→ Make sure Grafana dashboard exists and is saved
+
