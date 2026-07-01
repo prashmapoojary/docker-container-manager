@@ -11,6 +11,7 @@ function App() {
   const [containers, setContainers] = useState([]);
   const [stats, setStats] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all'); // all, running, stopped
   const [loading, setLoading] = useState(false);
   const [logsModal, setLogsModal] = useState({ show: false, name: '', logs: '' });
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -123,9 +124,14 @@ function App() {
     );
   };
 
-  const filteredContainers = containers.filter(c =>
-    c.Names[0].toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredContainers = containers.filter(c => {
+    const matchesSearch = c.Names[0].toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter =
+      filterStatus === 'all' ||
+      (filterStatus === 'running' && c.State === 'running') ||
+      (filterStatus === 'stopped' && c.State !== 'running');
+    return matchesSearch && matchesFilter;
+  });
 
   // Count running and stopped containers
   const runningCount = containers.filter(c => c.State === 'running').length;
@@ -182,16 +188,28 @@ function App() {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-3.5 text-muted-foreground" size={20} />
-          <input
-            type="text"
-            placeholder="Search containers..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-card border border-border pl-12 py-3 rounded-2xl focus:outline-none focus:border-primary text-lg text-foreground"
-          />
+        {/* Search Bar + Filter */}
+        <div className="flex gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-3.5 text-muted-foreground" size={20} />
+            <input
+              type="text"
+              placeholder="Search containers..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-card border border-border pl-12 py-3 rounded-2xl focus:outline-none focus:border-primary text-lg text-foreground"
+            />
+          </div>
+
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="bg-card border border-border px-6 py-3 rounded-2xl focus:outline-none focus:border-primary text-lg text-foreground cursor-pointer"
+          >
+            <option value="all">All Containers</option>
+            <option value="running">Running</option>
+            <option value="stopped">Stopped</option>
+          </select>
         </div>
 
         {/* Table */}
