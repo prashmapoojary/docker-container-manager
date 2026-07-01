@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import toast, { Toaster } from 'react-hot-toast';
 import { Play, Square, RotateCw, FileText, Search, RefreshCw, Cpu, MemoryStick } from 'lucide-react';
 
 const API_BASE = 'http://localhost:5000';
@@ -24,7 +25,7 @@ function App() {
         }
       });
     } catch (err) {
-      alert('Failed to connect to backend. Is backend running?');
+      toast.error('Failed to connect to backend');
       console.error(err);
     }
     setLoading(false);
@@ -46,32 +47,32 @@ function App() {
   }, []);
 
   const startContainer = async (id, name) => {
-    if (!confirm(`Start container: ${name}?`)) return;
     try {
       await axios.post(`${API_BASE}/containers/${id}/start`);
+      toast.success(`${name} started`);
       fetchContainers();
     } catch (err) {
-      alert('Failed to start container');
+      toast.error('Failed to start container');
     }
   };
 
   const stopContainer = async (id, name) => {
-    if (!confirm(`Stop container: ${name}?`)) return;
     try {
       await axios.post(`${API_BASE}/containers/${id}/stop`);
+      toast.success(`${name} stopped`);
       fetchContainers();
     } catch (err) {
-      alert('Failed to stop container');
+      toast.error('Failed to stop container');
     }
   };
 
   const restartContainer = async (id, name) => {
-    if (!confirm(`Restart container: ${name}?`)) return;
     try {
       await axios.post(`${API_BASE}/containers/${id}/restart`);
+      toast.success(`${name} restarted`);
       fetchContainers();
     } catch (err) {
-      alert('Failed to restart container');
+      toast.error('Failed to restart container');
     }
   };
 
@@ -80,7 +81,7 @@ function App() {
       const res = await axios.get(`${API_BASE}/containers/${id}/logs`);
       setLogsModal({ show: true, name, logs: res.data });
     } catch (err) {
-      alert('Failed to fetch logs');
+      toast.error('Failed to fetch logs');
     }
   };
 
@@ -94,6 +95,23 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background text-foreground p-6">
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: '#1e2a44',
+            color: '#f8fafc',
+            border: '1px solid #334155',
+            borderRadius: '12px',
+          },
+          success: {
+            iconTheme: { primary: '#4ade80', secondary: '#1e2a44' },
+          },
+          error: {
+            iconTheme: { primary: '#f87171', secondary: '#1e2a44' },
+          },
+        }}
+      />
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
