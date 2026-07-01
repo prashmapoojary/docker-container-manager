@@ -118,3 +118,21 @@ GET	/containers/:id/logs	Get container logs
 
 ### Grafana Monitoring
 ![Grafana](./screenshots/grafana.jpg)
+
+## ✨ Features
+
+- 🔐 **JWT Authentication** — secure login/logout with token-based auth
+- 📦 **List all containers** — view running and stopped containers
+- ▶️ **Start / Stop / Restart** containers with one click
+- ➕ **Create containers** — pull images and run new containers from the UI
+- 🗑️ **Delete containers** — remove containers with confirmation
+- 📄 **View live logs** for any container
+- 📊 **CPU & RAM usage** monitoring per container
+- 🔍 **Search & Filter** — search by name, filter by status (All/Running/Stopped)
+- 📈 **Stats summary** — Total / Running / Stopped counts
+- 🔔 **Toast notifications** — clean, non-intrusive feedback
+- 🔄 **Auto-refresh** every 5 seconds
+- 🐳 **Fully containerized** using Docker Compose
+- 📉 **Advanced monitoring** with Prometheus + Grafana + cAdvisor (embedded live graphs)
+
+## 🔑 Default Login
