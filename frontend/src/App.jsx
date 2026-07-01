@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
-import { Play, Square, RotateCw, FileText, Search, RefreshCw, Cpu, MemoryStick } from 'lucide-react';
+import { Play, Square, RotateCw, FileText, Search, RefreshCw, Cpu, MemoryStick, Trash2, MoreVertical } from 'lucide-react';
 
 const API_BASE = 'http://localhost:5000';
 const GRAFANA_BASE = 'http://localhost:3001';
@@ -13,6 +13,8 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [logsModal, setLogsModal] = useState({ show: false, name: '', logs: '' });
+  const [activeDropdown, setActiveDropdown] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
 
   const fetchContainers = async () => {
     setLoading(true);
@@ -44,6 +46,14 @@ function App() {
     fetchContainers();
     const interval = setInterval(fetchContainers, 5000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const handleOutsideClick = () => {
+      setActiveDropdown(null);
+    };
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
   }, []);
 
   const startContainer = async (id, name) => {
@@ -85,6 +95,34 @@ function App() {
     }
   };
 
+  const showConfirm = (title, message, onConfirm) => {
+    setConfirmModal({
+      show: true,
+      title,
+      message,
+      onConfirm: () => {
+        onConfirm();
+        setConfirmModal((prev) => ({ ...prev, show: false }));
+      },
+    });
+  };
+
+  const deleteContainer = async (id, name) => {
+    showConfirm(
+      'Delete Container',
+      `⚠️ Are you sure you want to delete container "${name}"? This action cannot be undone.`,
+      async () => {
+        try {
+          await axios.delete(`${API_BASE}/containers/${id}`);
+          toast.success(`${name} deleted`);
+          fetchContainers();
+        } catch (err) {
+          toast.error('Failed to delete container');
+        }
+      }
+    );
+  };
+
   const filteredContainers = containers.filter(c =>
     c.Names[0].toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -114,14 +152,14 @@ function App() {
       />
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col items-center text-center mb-8 relative md:flex-row md:justify-center">
           <div>
             <h1 className="text-4xl font-bold text-primary">Docker Container Manager</h1>
             <p className="text-muted-foreground mt-1">Mini Portainer • Live Monitoring</p>
           </div>
           <button
             onClick={fetchContainers}
-            className="flex items-center gap-2 bg-card hover:bg-muted px-5 py-2.5 rounded-xl border border-border transition"
+            className="mt-4 md:mt-0 md:absolute md:right-0 md:top-1/2 md:-translate-y-1/2 flex items-center gap-2 bg-card hover:bg-muted px-5 py-2.5 rounded-xl border border-border transition"
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
             Refresh
@@ -157,17 +195,17 @@ function App() {
         </div>
 
         {/* Table */}
-        <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-lg">
+        <div className="bg-card rounded-3xl border border-border shadow-lg relative overflow-visible">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-border">
-                <th className="text-left p-5">Container Name</th>
-                <th className="text-left p-5">Image</th>
-                <th className="text-left p-5">Status</th>
-                <th className="text-left p-5">CPU</th>
-                <th className="text-left p-5">RAM</th>
-                <th className="text-left p-5">Ports</th>
-                <th className="text-center p-5">Actions</th>
+              <tr className="border-b border-border bg-muted/30">
+                <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground rounded-tl-3xl">Container Name</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Image</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">CPU</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">RAM</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ports</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground w-24 rounded-tr-3xl">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -178,78 +216,117 @@ function App() {
 
                 return (
                   <tr key={container.Id} className="hover:bg-muted/50 border-b border-border last:border-none transition">
-                    <td className="p-5 font-medium">{name}</td>
-                    <td className="p-5 text-muted-foreground">{container.Image}</td>
-                    <td className="p-5">
-                      <span className={`px-4 py-1 rounded-full text-sm font-medium ${isRunning ? 'bg-primary/20 text-primary' : 'bg-destructive/20 text-destructive'
+                    <td className="px-4 py-3 text-sm font-medium text-foreground">{name}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground break-all max-w-[220px]">{container.Image}</td>
+                    <td className="px-4 py-3 text-sm">
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${isRunning ? 'bg-primary/20 text-primary' : 'bg-destructive/20 text-destructive'
                         }`}>
                         {container.Status}
                       </span>
                     </td>
 
-                    <td className="p-5">
+                    <td className="px-4 py-3 text-sm">
                       {isRunning && containerStats ? (
-                        <div className="flex items-center gap-2">
-                          <Cpu size={16} className="text-primary" />
-                          <span className="font-mono text-sm">{containerStats.cpuPercent}%</span>
+                        <div className="flex items-center gap-1.5">
+                          <Cpu size={14} className="text-primary" />
+                          <span className="font-mono text-xs">{containerStats.cpuPercent}%</span>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
+                        <span className="text-muted-foreground text-xs">-</span>
                       )}
                     </td>
 
-                    <td className="p-5">
+                    <td className="px-4 py-3 text-sm">
                       {isRunning && containerStats ? (
-                        <div className="flex items-center gap-2">
-                          <MemoryStick size={16} className="text-primary" />
-                          <span className="font-mono text-sm">
+                        <div className="flex items-center gap-1.5">
+                          <MemoryStick size={14} className="text-primary" />
+                          <span className="font-mono text-xs">
                             {containerStats.memUsageMB} MB ({containerStats.memPercent}%)
                           </span>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
+                        <span className="text-muted-foreground text-xs">-</span>
                       )}
                     </td>
 
-                    <td className="p-5 text-muted-foreground">
+                    <td className="px-4 py-3 text-sm text-muted-foreground font-mono text-xs break-all max-w-[150px]">
                       {container.Ports?.length > 0
                         ? container.Ports.map(p => `${p.PublicPort}:${p.PrivatePort}`).join(', ')
                         : '-'}
                     </td>
-                    <td className="p-5">
-                      <div className="flex gap-2 justify-center">
-                        {!isRunning && (
-                          <button
-                            onClick={() => startContainer(container.Id, name)}
-                            className="bg-primary hover:opacity-90 text-primary-foreground px-4 py-2 rounded-xl flex items-center gap-2 transition"
-                          >
-                            <Play size={18} /> Start
-                          </button>
-                        )}
+                    <td className="px-4 py-3 text-center">
+                      <div className="relative inline-block text-left">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveDropdown(activeDropdown === container.Id ? null : container.Id);
+                          }}
+                          className="p-1.5 hover:bg-muted rounded-lg transition text-muted-foreground hover:text-foreground border border-transparent hover:border-border cursor-pointer"
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+                        
+                        {/* Dropdown Menu */}
+                        {activeDropdown === container.Id && (
+                          <div className="absolute right-0 top-full mt-1 w-40 bg-card border border-border rounded-xl shadow-xl py-1.5 z-50 text-left">
+                            {!isRunning && (
+                              <button
+                                onClick={() => {
+                                  startContainer(container.Id, name);
+                                  setActiveDropdown(null);
+                                }}
+                                className="w-full text-left px-3.5 py-1.5 text-xs hover:bg-muted flex items-center gap-2 text-primary font-medium transition cursor-pointer"
+                              >
+                                <Play size={14} /> Start
+                              </button>
+                            )}
 
-                        {isRunning && (
-                          <>
+                            {isRunning && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    stopContainer(container.Id, name);
+                                    setActiveDropdown(null);
+                                  }}
+                                  className="w-full text-left px-3.5 py-1.5 text-xs hover:bg-muted flex items-center gap-2 text-destructive font-medium transition cursor-pointer"
+                                >
+                                  <Square size={14} /> Stop
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    restartContainer(container.Id, name);
+                                    setActiveDropdown(null);
+                                  }}
+                                  className="w-full text-left px-3.5 py-1.5 text-xs hover:bg-muted flex items-center gap-2 text-amber-500 font-medium transition cursor-pointer"
+                                >
+                                  <RotateCw size={14} /> Restart
+                                </button>
+                              </>
+                            )}
+
                             <button
-                              onClick={() => stopContainer(container.Id, name)}
-                              className="bg-destructive hover:opacity-90 text-destructive-foreground px-4 py-2 rounded-xl flex items-center gap-2 transition"
+                              onClick={() => {
+                                viewLogs(container.Id, name);
+                                setActiveDropdown(null);
+                              }}
+                              className="w-full text-left px-3.5 py-1.5 text-xs hover:bg-muted flex items-center gap-2 text-muted-foreground hover:text-foreground font-medium transition cursor-pointer"
                             >
-                              <Square size={18} /> Stop
+                              <FileText size={14} /> Logs
                             </button>
 
-                            <button
-                              onClick={() => restartContainer(container.Id, name)}
-                              className="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-xl flex items-center gap-2 transition"
-                            >
-                              <RotateCw size={18} /> Restart
-                            </button>
+                            <div className="h-[1px] bg-border my-1"></div>
 
                             <button
-                              onClick={() => viewLogs(container.Id, name)}
-                              className="bg-secondary hover:bg-muted text-secondary-foreground px-4 py-2 rounded-xl flex items-center gap-2 transition"
+                              onClick={() => {
+                                deleteContainer(container.Id, name);
+                                setActiveDropdown(null);
+                              }}
+                              className="w-full text-left px-3.5 py-1.5 text-xs hover:bg-destructive/10 text-destructive flex items-center gap-2 font-medium transition cursor-pointer"
                             >
-                              <FileText size={18} /> Logs
+                              <Trash2 size={14} /> Delete
                             </button>
-                          </>
+                          </div>
                         )}
                       </div>
                     </td>
@@ -260,7 +337,7 @@ function App() {
           </table>
 
           {filteredContainers.length === 0 && (
-            <p className="text-center py-12 text-muted-foreground">No containers found.</p>
+            <p className="text-center py-12 text-muted-foreground rounded-b-3xl">No containers found.</p>
           )}
         </div>
 
@@ -309,6 +386,36 @@ function App() {
             <pre className="p-6 overflow-auto font-mono text-sm bg-black/80 flex-1 text-green-400 whitespace-pre-wrap max-h-[70vh] rounded-b-3xl">
               {logsModal.logs || 'No logs available'}
             </pre>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirmation Modal */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-3xl w-full max-w-md shadow-2xl overflow-hidden transform transition-all">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-primary mb-2 flex items-center gap-2">
+                {confirmModal.title}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-3">
+                {confirmModal.message}
+              </p>
+            </div>
+            <div className="px-6 py-4 bg-muted/30 border-t border-border flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmModal((prev) => ({ ...prev, show: false }))}
+                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmModal.onConfirm}
+                className="px-4 py-2 text-sm font-semibold bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-xl transition cursor-pointer"
+              >
+                Confirm Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

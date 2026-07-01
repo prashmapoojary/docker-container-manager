@@ -96,6 +96,17 @@ app.get('/containers/:id/stats', async (req, res) => {
     }
 });
 
+// Delete a container
+app.delete('/containers/:id', async (req, res) => {
+    try {
+        const container = docker.getContainer(req.params.id);
+        await container.remove({ force: true });
+        res.json({ message: 'Container deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 const PORT = 5000;
 app.listen(PORT, () => {
     console.log(`🚀 Backend running at http://localhost:${PORT}`);
