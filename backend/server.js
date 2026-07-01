@@ -107,6 +107,48 @@ app.delete('/containers/:id', async (req, res) => {
     }
 });
 
+// Create and run a new container
+app.post('/containers/create', async (req, res) => {
+    try {
+        const { image, name, port } = req.body;
+
+        // Pull the image first (in case it doesn't exist locally)
+        await new Promise((resolve, reject) => {
+            docker.pull(image, (err, stream) => {
+                if (err) return reject(err);
+                docker.modem.followProgress(stream, (err) => {
+                    if (err) return reject(err);
+                    resolve();
+                });
+            });
+        });
+
+        // Container configuration
+        const config = {
+            Image: image,
+            name: name || undefined,
+        };
+
+        // Add port mapping if provided
+        if (port) {
+            const [hostPort, containerPort] = port.split(':');
+            config.ExposedPorts = { [`${containerPort}/tcp`]: {} };
+            config.HostConfig = {
+                PortBindings: {
+                    [`${containerPort}/tcp`]: [{ HostPort: hostPort }]
+                }
+            };
+        }
+
+        const container = await docker.createContainer(config);
+        await container.start();
+
+        res.json({ message: 'Container created and started successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 const PORT = 5000;
 app.listen(PORT, () => {
     console.log(`🚀 Backend running at http://localhost:${PORT}`);

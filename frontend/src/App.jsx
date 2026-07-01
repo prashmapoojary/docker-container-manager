@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
-import { Play, Square, RotateCw, FileText, Search, RefreshCw, Cpu, MemoryStick, Trash2, MoreVertical } from 'lucide-react';
+import { Play, Square, RotateCw, FileText, Search, RefreshCw, Cpu, MemoryStick, Trash2, MoreVertical, Plus, Sun, Moon } from 'lucide-react';
 
 const API_BASE = 'http://localhost:5000';
 const GRAFANA_BASE = 'http://localhost:3001';
@@ -16,6 +16,11 @@ function App() {
   const [logsModal, setLogsModal] = useState({ show: false, name: '', logs: '' });
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [confirmModal, setConfirmModal] = useState({ show: false, title: '', message: '', onConfirm: null });
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [createModal, setCreateModal] = useState(false);
+  const [newContainer, setNewContainer] = useState({ image: '', name: '', port: '' });
+  const [creating, setCreating] = useState(false);
+  const [darkMode, setDarkMode] = useState(true); // default to dark
 
   const fetchContainers = async () => {
     setLoading(true);
@@ -52,10 +57,19 @@ function App() {
   useEffect(() => {
     const handleOutsideClick = () => {
       setActiveDropdown(null);
+      setIsFilterOpen(false);
     };
     document.addEventListener('click', handleOutsideClick);
     return () => document.removeEventListener('click', handleOutsideClick);
   }, []);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
 
   const startContainer = async (id, name) => {
     try {
@@ -124,6 +138,27 @@ function App() {
     );
   };
 
+  const createContainer = async () => {
+    if (!newContainer.image) {
+      toast.error('Image name is required');
+      return;
+    }
+    setCreating(true);
+    const loadingToast = toast.loading('Pulling image & creating container...');
+    try {
+      await axios.post(`${API_BASE}/containers/create`, newContainer);
+      toast.dismiss(loadingToast);
+      toast.success('Container created successfully');
+      setCreateModal(false);
+      setNewContainer({ image: '', name: '', port: '' });
+      fetchContainers();
+    } catch (err) {
+      toast.dismiss(loadingToast);
+      toast.error(err.response?.data?.error || 'Failed to create container');
+    }
+    setCreating(false);
+  };
+
   const filteredContainers = containers.filter(c => {
     const matchesSearch = c.Names[0].toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter =
@@ -163,13 +198,29 @@ function App() {
             <h1 className="text-4xl font-bold text-primary">Docker Container Manager</h1>
             <p className="text-muted-foreground mt-1">Mini Portainer • Live Monitoring</p>
           </div>
-          <button
-            onClick={fetchContainers}
-            className="mt-4 md:mt-0 md:absolute md:right-0 md:top-1/2 md:-translate-y-1/2 flex items-center gap-2 bg-card hover:bg-muted px-5 py-2.5 rounded-xl border border-border transition"
-          >
-            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-            Refresh
-          </button>
+          <div className="flex gap-2.5 mt-4 md:mt-0 md:absolute md:right-0 md:top-1/2 md:-translate-y-1/2 items-center">
+            <button
+              onClick={() => setCreateModal(true)}
+              className="flex items-center gap-1.5 bg-primary hover:opacity-90 text-primary-foreground px-3.5 py-2 rounded-xl transition text-sm font-medium cursor-pointer"
+            >
+              <Plus size={16} />
+              Create Container
+            </button>
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className="flex items-center gap-1.5 bg-card hover:bg-muted p-2 rounded-xl border border-border transition cursor-pointer"
+              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+            <button
+              onClick={fetchContainers}
+              className="flex items-center justify-center bg-card hover:bg-muted p-2 rounded-xl border border-border transition cursor-pointer"
+              title="Refresh"
+            >
+              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
 
         {/* Stats Summary */}
@@ -201,15 +252,66 @@ function App() {
             />
           </div>
 
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-card border border-border px-4 py-2.5 rounded-xl focus:outline-none focus:border-primary text-sm text-foreground cursor-pointer [&>option]:bg-card [&>option]:text-foreground [&>option]:p-2"
-          >
-            <option value="all" className="bg-card text-foreground">All Containers</option>
-            <option value="running" className="bg-card text-foreground">Running</option>
-            <option value="stopped" className="bg-card text-foreground">Stopped</option>
-          </select>
+          {/* Custom Select Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsFilterOpen(!isFilterOpen);
+                setActiveDropdown(null); // close other open dropdowns
+              }}
+              className="bg-card border border-border px-5 py-2.5 rounded-xl focus:outline-none focus:border-primary text-sm text-foreground cursor-pointer flex items-center gap-2 min-w-[160px] justify-between transition hover:bg-muted"
+            >
+              <span>
+                {filterStatus === 'all' && 'All Containers'}
+                {filterStatus === 'running' && 'Running'}
+                {filterStatus === 'stopped' && 'Stopped'}
+              </span>
+              <span className="text-muted-foreground text-[10px]">▼</span>
+            </button>
+
+            {isFilterOpen && (
+              <div className="absolute right-0 top-full mt-1 w-40 bg-card border border-border rounded-xl shadow-xl py-1.5 z-50 text-left">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterStatus('all');
+                    setIsFilterOpen(false);
+                  }}
+                  className={`w-full text-left px-3.5 py-1.5 text-xs hover:bg-muted font-medium transition cursor-pointer ${
+                    filterStatus === 'all' ? 'text-primary bg-primary/10' : 'text-foreground'
+                  }`}
+                >
+                  All Containers
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterStatus('running');
+                    setIsFilterOpen(false);
+                  }}
+                  className={`w-full text-left px-3.5 py-1.5 text-xs hover:bg-muted font-medium transition cursor-pointer ${
+                    filterStatus === 'running' ? 'text-primary bg-primary/10' : 'text-foreground'
+                  }`}
+                >
+                  Running
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterStatus('stopped');
+                    setIsFilterOpen(false);
+                  }}
+                  className={`w-full text-left px-3.5 py-1.5 text-xs hover:bg-muted font-medium transition cursor-pointer ${
+                    filterStatus === 'stopped' ? 'text-primary bg-primary/10' : 'text-foreground'
+                  }`}
+                >
+                  Stopped
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Table */}
@@ -269,7 +371,9 @@ function App() {
 
                     <td className="px-4 py-3 text-sm text-muted-foreground font-mono text-xs break-all max-w-[150px]">
                       {container.Ports?.length > 0
-                        ? container.Ports.map(p => `${p.PublicPort}:${p.PrivatePort}`).join(', ')
+                        ? container.Ports
+                            .map(p => p.PublicPort ? `${p.PublicPort}:${p.PrivatePort}` : `${p.PrivatePort}`)
+                            .join(', ')
                         : '-'}
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -387,6 +491,71 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Create Container Modal */}
+      {createModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-3xl w-[90%] max-w-md shadow-2xl">
+            <div className="p-5 border-b border-border flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Create New Container</h2>
+              <button
+                onClick={() => setCreateModal(false)}
+                className="text-3xl leading-none hover:text-primary transition cursor-pointer"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm text-muted-foreground mb-2">
+                  Image * (e.g., nginx, redis, mysql)
+                </label>
+                <input
+                  type="text"
+                  placeholder="nginx"
+                  value={newContainer.image}
+                  onChange={(e) => setNewContainer({ ...newContainer, image: e.target.value })}
+                  className="w-full bg-background border border-border px-4 py-3 rounded-xl focus:outline-none focus:border-primary text-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-muted-foreground mb-2">
+                  Container Name (optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="my-container"
+                  value={newContainer.name}
+                  onChange={(e) => setNewContainer({ ...newContainer, name: e.target.value })}
+                  className="w-full bg-background border border-border px-4 py-3 rounded-xl focus:outline-none focus:border-primary text-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-muted-foreground mb-2">
+                  Port Mapping (optional, e.g., 8090:80)
+                </label>
+                <input
+                  type="text"
+                  placeholder="8090:80"
+                  value={newContainer.port}
+                  onChange={(e) => setNewContainer({ ...newContainer, port: e.target.value })}
+                  className="w-full bg-background border border-border px-4 py-3 rounded-xl focus:outline-none focus:border-primary text-foreground"
+                />
+              </div>
+
+              <button
+                onClick={createContainer}
+                disabled={creating}
+                className="w-full bg-primary hover:opacity-90 text-primary-foreground py-3 rounded-xl transition font-medium disabled:opacity-50 cursor-pointer"
+              >
+                {creating ? 'Creating...' : 'Create & Start Container'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Logs Modal */}
       {logsModal.show && (
