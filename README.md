@@ -1,6 +1,14 @@
 # 🐳 Docker Container Manager
 
-A mini Portainer-style dashboard for managing Docker containers with real-time monitoring, built with React, Node.js, and the Docker Engine API.
+A mini Portainer-style dashboard for managing Docker containers with real-time monitoring, built with React, Node.js, Docker Engine API, Prometheus, and Grafana.
+
+## 🎥 Demo Video
+
+## 🎥 Demo Video
+
+[![Watch the demo](https://img.shields.io/badge/Watch-Demo-blue?style=for-the-badge&logo=loom)](https://www.loom.com/share/e7bc81449f594940b6b69a9bdb63c4b9)
+
+> Click the badge above to watch the full project walkthrough.
 
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
