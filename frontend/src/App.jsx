@@ -1,11 +1,33 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
-import { Play, Square, RotateCw, FileText, Search, RefreshCw, Cpu, MemoryStick, Trash2, MoreVertical, Plus, Sun, Moon } from 'lucide-react';
+import { Play, Square, RotateCw, FileText, Search, RefreshCw, Cpu, MemoryStick, Trash2, MoreVertical, Plus, Sun, Moon, LogOut } from 'lucide-react';
+import Login from './Login';
 
 const API_BASE = 'http://localhost:5000';
 const GRAFANA_BASE = 'http://localhost:3001';
 const DASHBOARD_ID = 'adsrvlz'; // Your dashboard ID
+
+// Attach token to every request
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Handle expired/invalid tokens
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.reload();
+    }
+    return Promise.reject(error);
+  }
+);
 
 function App() {
   const [containers, setContainers] = useState([]);
@@ -21,6 +43,7 @@ function App() {
   const [newContainer, setNewContainer] = useState({ image: '', name: '', port: '' });
   const [creating, setCreating] = useState(false);
   const [darkMode, setDarkMode] = useState(true); // default to dark
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
 
   const fetchContainers = async () => {
     setLoading(true);
@@ -49,10 +72,12 @@ function App() {
   };
 
   useEffect(() => {
-    fetchContainers();
-    const interval = setInterval(fetchContainers, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    if (isLoggedIn) {
+      fetchContainers();
+      const interval = setInterval(fetchContainers, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [isLoggedIn]);
 
   useEffect(() => {
     const handleOutsideClick = () => {
@@ -70,6 +95,12 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setIsLoggedIn(false);
+    toast.success('Logged out');
+  };
 
   const startContainer = async (id, name) => {
     try {
@@ -172,6 +203,16 @@ function App() {
   const runningCount = containers.filter(c => c.State === 'running').length;
   const stoppedCount = containers.length - runningCount;
 
+  // Show login page if not authenticated
+  if (!isLoggedIn) {
+    return (
+      <>
+        <Toaster position="top-right" />
+        <Login onLogin={() => setIsLoggedIn(true)} />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground p-6">
       <Toaster 
@@ -219,6 +260,13 @@ function App() {
               title="Refresh"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 bg-destructive hover:opacity-90 text-destructive-foreground px-3.5 py-2 rounded-xl transition text-sm font-medium cursor-pointer"
+            >
+              <LogOut size={16} />
+              Logout
             </button>
           </div>
         </div>
