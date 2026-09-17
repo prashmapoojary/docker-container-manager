@@ -6,10 +6,27 @@ const jwt = require('jsonwebtoken');
 const app = express();
 const docker = new Docker();
 
-// Auth config
-const JWT_SECRET = 'my-super-secret-key-change-in-production';
-const ADMIN_USER = 'admin';
-const ADMIN_PASS = 'admin123';
+// Auth & Environment Config
+const JWT_SECRET = process.env.JWT_SECRET || 'my-super-secret-key-change-in-production';
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
+const PORT = process.env.PORT || 5000;
+
+// Core containers that cannot be stopped or deleted in demo mode
+const PROTECTED_CONTAINERS = (process.env.PROTECTED_CONTAINERS || 'portainer-backend,portainer-frontend,cadvisor,prometheus,grafana')
+    .split(',')
+    .map(c => c.trim().toLowerCase())
+    .filter(Boolean);
+
+const isProtectedContainer = async (container) => {
+    try {
+        const info = await container.inspect();
+        const rawName = (info.Name || '').replace(/^\//, '').toLowerCase();
+        return PROTECTED_CONTAINERS.some(p => rawName === p || rawName.includes(p));
+    } catch {
+        return false;
+    }
+};
 
 app.use(cors());
 app.use(express.json());
@@ -70,6 +87,9 @@ app.post('/containers/:id/start', authMiddleware, async (req, res) => {
 app.post('/containers/:id/stop', authMiddleware, async (req, res) => {
     try {
         const container = docker.getContainer(req.params.id);
+        if (await isProtectedContainer(container)) {
+            return res.status(403).json({ error: 'Protected container: Cannot stop core system services.' });
+        }
         await container.stop();
         res.json({ message: 'Container stopped successfully' });
     } catch (err) {
@@ -81,6 +101,9 @@ app.post('/containers/:id/stop', authMiddleware, async (req, res) => {
 app.post('/containers/:id/restart', authMiddleware, async (req, res) => {
     try {
         const container = docker.getContainer(req.params.id);
+        if (await isProtectedContainer(container)) {
+            return res.status(403).json({ error: 'Protected container: Cannot restart core system services.' });
+        }
         await container.restart();
         res.json({ message: 'Container restarted successfully' });
     } catch (err) {
@@ -137,6 +160,9 @@ app.get('/containers/:id/stats', authMiddleware, async (req, res) => {
 app.delete('/containers/:id', authMiddleware, async (req, res) => {
     try {
         const container = docker.getContainer(req.params.id);
+        if (await isProtectedContainer(container)) {
+            return res.status(403).json({ error: 'Protected container: Cannot delete core system services.' });
+        }
         await container.remove({ force: true });
         res.json({ message: 'Container deleted successfully' });
     } catch (err) {
@@ -186,7 +212,6 @@ app.post('/containers/create', authMiddleware, async (req, res) => {
     }
 });
 
-const PORT = 5000;
 app.listen(PORT, () => {
     console.log(`🚀 Backend running at http://localhost:${PORT}`);
 });

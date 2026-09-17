@@ -3,7 +3,11 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Lock, User } from 'lucide-react';
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = import.meta.env.VITE_API_BASE !== undefined
+  ? import.meta.env.VITE_API_BASE
+  : (typeof window !== 'undefined' && window.location.hostname === 'localhost' && window.location.port !== '' && window.location.port !== '80'
+      ? 'http://localhost:5000'
+      : '/api');
 
 function Login({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -27,9 +31,33 @@ function Login({ onLogin }) {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="bg-card border border-border rounded-3xl p-8 w-full max-w-md shadow-2xl">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-primary">🐳 Docker Manager</h1>
-          <p className="text-muted-foreground mt-2">Sign in to continue</p>
+          <p className="text-muted-foreground mt-2">Sign in to manage containers</p>
+        </div>
+
+        {/* Portfolio Demo Credentials Quick Access */}
+        <div className="mb-6 bg-primary/10 border border-primary/20 rounded-2xl p-4 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-primary flex items-center gap-1.5">
+              <span>✨</span> Demo Access
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setUsername('admin');
+                setPassword('admin123');
+              }}
+              className="text-primary font-bold hover:underline cursor-pointer bg-primary/15 hover:bg-primary/25 px-2.5 py-1 rounded-lg transition"
+            >
+              Click to Auto-fill
+            </button>
+          </div>
+          <p className="mt-2 text-muted-foreground flex flex-wrap items-center gap-2">
+            <span>User: <code className="bg-background/80 px-1.5 py-0.5 rounded text-foreground font-mono">admin</code></span>
+            <span>•</span>
+            <span>Pass: <code className="bg-background/80 px-1.5 py-0.5 rounded text-foreground font-mono">admin123</code></span>
+          </p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">

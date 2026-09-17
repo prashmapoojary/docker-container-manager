@@ -4,9 +4,21 @@ import toast, { Toaster } from 'react-hot-toast';
 import { Play, Square, RotateCw, FileText, Search, RefreshCw, Cpu, MemoryStick, Trash2, MoreVertical, Plus, Sun, Moon, LogOut } from 'lucide-react';
 import Login from './Login';
 
-const API_BASE = 'http://localhost:5000';
-const GRAFANA_BASE = 'http://localhost:3001';
-const DASHBOARD_ID = 'adsrvlz'; // Your dashboard ID
+const API_BASE = import.meta.env.VITE_API_BASE !== undefined
+  ? import.meta.env.VITE_API_BASE
+  : (typeof window !== 'undefined' && window.location.hostname === 'localhost' && window.location.port !== '' && window.location.port !== '80'
+      ? 'http://localhost:5000'
+      : '/api');
+
+const GRAFANA_BASE = import.meta.env.VITE_GRAFANA_BASE !== undefined
+  ? import.meta.env.VITE_GRAFANA_BASE
+  : (typeof window !== 'undefined' && window.location.hostname === 'localhost' && window.location.port !== '' && window.location.port !== '80'
+      ? 'http://localhost:3001'
+      : '/grafana');
+
+const DASHBOARD_ID = import.meta.env.VITE_GRAFANA_DASHBOARD_ID || 'adsrvlz';
+
+const PROTECTED_CONTAINERS = ['portainer-backend', 'portainer-frontend', 'cadvisor', 'prometheus', 'grafana'];
 
 // Attach token to every request
 axios.interceptors.request.use((config) => {
@@ -384,7 +396,16 @@ function App() {
 
                 return (
                   <tr key={container.Id} className="hover:bg-muted/50 border-b border-border last:border-none transition">
-                    <td className="px-4 py-3 text-sm font-medium text-foreground">{name}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-foreground">
+                      <div className="flex items-center gap-2">
+                        <span>{name}</span>
+                        {PROTECTED_CONTAINERS.includes(name) && (
+                          <span className="text-[10px] bg-sky-500/15 text-sky-400 border border-sky-500/30 px-1.5 py-0.5 rounded font-medium">
+                            System
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-sm text-muted-foreground break-all max-w-[220px]">{container.Image}</td>
                     <td className="px-4 py-3 text-sm">
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${isRunning ? 'bg-primary/20 text-primary' : 'bg-destructive/20 text-destructive'
